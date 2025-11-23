@@ -1,194 +1,264 @@
-"use client"
+'use client';
 
-import { useEffect, useRef, useState } from "react"
-import { MapPin, Zap, Shield, Target } from "lucide-react"
-
-interface Territory {
-  id: string
-  lat: number
-  lng: number
-  owner: string
-  strength: number
-  color: string
-}
+import React, { useEffect, useRef, useState } from 'react';
+import { MapPin, Navigation, Zap, Shield, Swords } from 'lucide-react';
+import { Territory } from '@/lib/types';
+import { COLORS } from '@/lib/constants';
 
 interface MapViewProps {
-  userLocation: { lat: number; lng: number } | null
-  territories: Territory[]
-  isRunning: boolean
+  territories: Territory[];
+  currentPosition: [number, number] | null;
+  activeRoute: [number, number][];
+  onTerritoryClick?: (territory: Territory) => void;
 }
 
-export function MapView({ userLocation, territories, isRunning }: MapViewProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [mockTerritories, setMockTerritories] = useState<Territory[]>([])
+export default function MapView({ 
+  territories, 
+  currentPosition, 
+  activeRoute,
+  onTerritoryClick 
+}: MapViewProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(15);
+  const [center, setCenter] = useState<[number, number]>(currentPosition || [-23.5505, -46.6333]);
 
-  // Gerar territórios mock para demonstração
   useEffect(() => {
-    if (userLocation) {
-      const colors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"]
-      const newTerritories: Territory[] = []
-      
-      for (let i = 0; i < 15; i++) {
-        newTerritories.push({
-          id: `territory-${i}`,
-          lat: userLocation.lat + (Math.random() - 0.5) * 0.02,
-          lng: userLocation.lng + (Math.random() - 0.5) * 0.02,
-          owner: Math.random() > 0.5 ? "you" : `user-${Math.floor(Math.random() * 5)}`,
-          strength: Math.floor(Math.random() * 100),
-          color: colors[Math.floor(Math.random() * colors.length)]
-        })
-      }
-      
-      setMockTerritories(newTerritories)
+    if (currentPosition) {
+      setCenter(currentPosition);
     }
-  }, [userLocation])
+  }, [currentPosition]);
 
-  // Renderizar mapa tático
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || !userLocation) return
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    // Set canvas size to match container
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
 
-    // Limpar canvas
-    ctx.fillStyle = "#0f172a"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    // Desenhar grid tático
-    ctx.strokeStyle = "#1e293b"
-    ctx.lineWidth = 1
-    for (let i = 0; i < canvas.width; i += 50) {
-      ctx.beginPath()
-      ctx.moveTo(i, 0)
-      ctx.lineTo(i, canvas.height)
-      ctx.stroke()
+    // Clear canvas
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid
+    drawGrid(ctx, canvas.width, canvas.height);
+
+    // Draw territories
+    territories.forEach(territory => {
+      drawTerritory(ctx, territory);
+    });
+
+    // Draw active route
+    if (activeRoute.length > 0) {
+      drawRoute(ctx, activeRoute);
     }
-    for (let i = 0; i < canvas.height; i += 50) {
-      ctx.beginPath()
-      ctx.moveTo(0, i)
-      ctx.lineTo(canvas.width, i)
-      ctx.stroke()
+
+    // Draw current position
+    if (currentPosition) {
+      drawCurrentPosition(ctx, currentPosition);
+    }
+  }, [territories, currentPosition, activeRoute, zoom, center]);
+
+  const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1;
+
+    for (let x = 0; x < width; x += 50) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
     }
 
-    // Desenhar territórios
-    mockTerritories.forEach((territory) => {
-      const x = ((territory.lng - userLocation.lng) * 10000) + canvas.width / 2
-      const y = ((userLocation.lat - territory.lat) * 10000) + canvas.height / 2
-
-      // Área de território
-      ctx.fillStyle = territory.owner === "you" ? "#3b82f680" : territory.color + "40"
-      ctx.beginPath()
-      ctx.arc(x, y, 40, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Borda
-      ctx.strokeStyle = territory.owner === "you" ? "#3b82f6" : territory.color
-      ctx.lineWidth = 2
-      ctx.stroke()
-
-      // Força do território
-      ctx.fillStyle = "#fff"
-      ctx.font = "12px monospace"
-      ctx.textAlign = "center"
-      ctx.fillText(`${territory.strength}%`, x, y + 4)
-    })
-
-    // Desenhar posição do usuário
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 2
-    
-    ctx.fillStyle = "#06b6d4"
-    ctx.shadowColor = "#06b6d4"
-    ctx.shadowBlur = 20
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, 8, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.shadowBlur = 0
-
-    // Pulso se estiver correndo
-    if (isRunning) {
-      ctx.strokeStyle = "#06b6d480"
-      ctx.lineWidth = 3
-      ctx.beginPath()
-      ctx.arc(centerX, centerY, 20, 0, Math.PI * 2)
-      ctx.stroke()
+    for (let y = 0; y < height; y += 50) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
     }
-  }, [userLocation, mockTerritories, isRunning])
+  };
+
+  const drawTerritory = (ctx: CanvasRenderingContext2D, territory: Territory) => {
+    if (territory.coordinates.length < 3) return;
+
+    ctx.fillStyle = territory.color + '40';
+    ctx.strokeStyle = territory.color;
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    const [startX, startY] = latLngToCanvas(territory.coordinates[0]);
+    ctx.moveTo(startX, startY);
+
+    territory.coordinates.forEach(coord => {
+      const [x, y] = latLngToCanvas(coord);
+      ctx.lineTo(x, y);
+    });
+
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw strength indicator
+    const centerX = territory.coordinates.reduce((sum, c) => sum + c[0], 0) / territory.coordinates.length;
+    const centerY = territory.coordinates.reduce((sum, c) => sum + c[1], 0) / territory.coordinates.length;
+    const [cx, cy] = latLngToCanvas([centerX, centerY]);
+
+    ctx.fillStyle = territory.color;
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${territory.strength}`, cx, cy);
+  };
+
+  const drawRoute = (ctx: CanvasRenderingContext2D, route: [number, number][]) => {
+    if (route.length < 2) return;
+
+    ctx.strokeStyle = COLORS.primary;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Add glow effect
+    ctx.shadowColor = COLORS.primary;
+    ctx.shadowBlur = 10;
+
+    ctx.beginPath();
+    const [startX, startY] = latLngToCanvas(route[0]);
+    ctx.moveTo(startX, startY);
+
+    route.forEach(coord => {
+      const [x, y] = latLngToCanvas(coord);
+      ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  };
+
+  const drawCurrentPosition = (ctx: CanvasRenderingContext2D, position: [number, number]) => {
+    const [x, y] = latLngToCanvas(position);
+
+    // Outer pulse
+    ctx.fillStyle = COLORS.primary + '40';
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner circle
+    ctx.fillStyle = COLORS.primary;
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Center dot
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  const latLngToCanvas = (coord: [number, number]): [number, number] => {
+    const canvas = canvasRef.current;
+    if (!canvas) return [0, 0];
+
+    const scale = Math.pow(2, zoom);
+    const offsetX = (coord[1] - center[1]) * scale * 1000 + canvas.width / 2;
+    const offsetY = (center[0] - coord[0]) * scale * 1000 + canvas.height / 2;
+
+    return [offsetX, offsetY];
+  };
 
   return (
-    <div className="relative w-full h-full">
-      {/* Canvas do mapa */}
+    <div ref={containerRef} className="relative w-full h-[600px] bg-black rounded-2xl overflow-hidden border border-gray-800">
+      {/* Canvas Map */}
       <canvas
         ref={canvasRef}
-        width={800}
-        height={800}
-        className="absolute inset-0 w-full h-full"
+        className="w-full h-full"
       />
 
-      {/* Overlay de informações */}
-      <div className="absolute top-4 left-4 right-4 flex flex-col gap-3 pointer-events-none">
-        {/* Stats rápidos */}
-        <div className="flex gap-2">
-          <div className="bg-black/60 backdrop-blur-md border border-cyan-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-cyan-400" />
+      {/* Map Controls */}
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
+        <button
+          onClick={() => setZoom(z => Math.min(z + 1, 20))}
+          className="bg-gray-900/90 backdrop-blur-sm text-white p-3 rounded-lg hover:bg-gray-800 transition-all shadow-lg"
+        >
+          <span className="text-xl font-bold">+</span>
+        </button>
+        <button
+          onClick={() => setZoom(z => Math.max(z - 1, 10))}
+          className="bg-gray-900/90 backdrop-blur-sm text-white p-3 rounded-lg hover:bg-gray-800 transition-all shadow-lg"
+        >
+          <span className="text-xl font-bold">−</span>
+        </button>
+        <button
+          onClick={() => currentPosition && setCenter(currentPosition)}
+          className="bg-gray-900/90 backdrop-blur-sm text-white p-3 rounded-lg hover:bg-gray-800 transition-all shadow-lg"
+        >
+          <Navigation className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Territory Stats Overlay */}
+      <div className="absolute top-4 left-4 flex flex-wrap gap-3">
+        <div className="bg-gray-900/90 backdrop-blur-sm px-4 py-3 rounded-lg shadow-lg">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-green-400" />
             <div>
-              <div className="text-[10px] text-cyan-400/70 uppercase font-bold">Territórios</div>
-              <div className="text-lg font-black text-white">
-                {mockTerritories.filter(t => t.owner === "you").length}
+              <div className="text-green-400 text-2xl font-bold">
+                {territories.filter(t => t.ownerId === 'current-user').length}
               </div>
+              <div className="text-gray-400 text-xs">Seus Territórios</div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-purple-400" />
+        <div className="bg-gray-900/90 backdrop-blur-sm px-4 py-3 rounded-lg shadow-lg">
+          <div className="flex items-center gap-2">
+            <Swords className="w-5 h-5 text-orange-400" />
             <div>
-              <div className="text-[10px] text-purple-400/70 uppercase font-bold">Força Total</div>
-              <div className="text-lg font-black text-white">
-                {mockTerritories
-                  .filter(t => t.owner === "you")
-                  .reduce((acc, t) => acc + t.strength, 0)}
+              <div className="text-orange-400 text-2xl font-bold">
+                {territories.filter(t => t.strength < 50).length}
               </div>
+              <div className="text-gray-400 text-xs">Em Disputa</div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-black/60 backdrop-blur-md border border-pink-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
-            <Target className="w-4 h-4 text-pink-400" />
+        <div className="bg-gray-900/90 backdrop-blur-sm px-4 py-3 rounded-lg shadow-lg">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-red-400" />
             <div>
-              <div className="text-[10px] text-pink-400/70 uppercase font-bold">Rank</div>
-              <div className="text-lg font-black text-white">#12</div>
+              <div className="text-red-400 text-2xl font-bold">
+                {territories.filter(t => t.ownerId !== 'current-user').length}
+              </div>
+              <div className="text-gray-400 text-xs">Inimigos</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Legenda */}
-      <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md border border-purple-500/30 rounded-xl px-4 py-3">
-        <div className="flex items-center gap-4 text-xs">
+      {/* Legend */}
+      <div className="absolute bottom-4 left-4 bg-gray-900/90 backdrop-blur-sm p-4 rounded-lg shadow-lg">
+        <div className="text-white text-sm font-semibold mb-2">Legenda</div>
+        <div className="flex flex-col gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
-            <span className="text-cyan-400 font-bold">Seus Territórios</span>
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.territories.owned }} />
+            <span className="text-gray-300">Seus Territórios</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            <span className="text-purple-400 font-bold">Outros Jogadores</span>
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.territories.contested }} />
+            <span className="text-gray-300">Em Disputa</span>
           </div>
           <div className="flex items-center gap-2">
-            <MapPin className="w-3 h-3 text-cyan-400" />
-            <span className="text-white font-bold">Você</span>
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.territories.enemy }} />
+            <span className="text-gray-300">Inimigos</span>
           </div>
         </div>
       </div>
-
-      {/* Indicador de modo corrida */}
-      {isRunning && (
-        <div className="absolute top-4 right-4 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-xl px-4 py-2 animate-pulse">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
-            <span className="text-white font-black text-sm uppercase">Conquistando</span>
-          </div>
-        </div>
-      )}
     </div>
-  )
+  );
 }

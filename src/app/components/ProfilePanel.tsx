@@ -1,161 +1,110 @@
-"use client"
+'use client';
 
-import { User, Settings, Trophy, Target, Zap, Crown, Edit, LogOut } from "lucide-react"
+import React from 'react';
+import { User, Trophy, Zap, Settings, Edit, Crown } from 'lucide-react';
+import { User as UserType } from '@/lib/types';
+import { XP_LEVELS } from '@/lib/constants';
 
-export function ProfilePanel() {
-  const profile = {
-    name: "Corredor Elite",
-    username: "@runnerx_2024",
-    avatar: "CE",
-    level: 12,
-    xp: 2450,
-    xpToNext: 3000,
-    rank: 12,
-    totalDistance: 127.5,
-    totalRuns: 34,
-    territories: 23,
-    achievements: 18,
-    joinDate: "Janeiro 2024",
-  }
+interface ProfilePanelProps {
+  user: UserType;
+  onEditProfile?: () => void;
+}
 
-  const achievements = [
-    { id: 1, name: "Primeiro Território", icon: Target, color: "from-blue-500 to-cyan-600", unlocked: true },
-    { id: 2, name: "Maratonista", icon: Zap, color: "from-purple-500 to-pink-600", unlocked: true },
-    { id: 3, name: "Dominador", icon: Crown, color: "from-yellow-400 to-orange-500", unlocked: true },
-    { id: 4, name: "Conquistador", icon: Trophy, color: "from-green-500 to-emerald-600", unlocked: true },
-    { id: 5, name: "Lenda Urbana", icon: Crown, color: "from-red-500 to-pink-600", unlocked: false },
-    { id: 6, name: "Rei do Bairro", icon: Crown, color: "from-purple-500 to-purple-700", unlocked: false },
-  ]
-
-  const stats = [
-    { label: "Distância Total", value: `${profile.totalDistance} km`, color: "text-cyan-400" },
-    { label: "Corridas", value: profile.totalRuns, color: "text-purple-400" },
-    { label: "Territórios", value: profile.territories, color: "text-pink-400" },
-    { label: "Conquistas", value: profile.achievements, color: "text-orange-400" },
-  ]
+export default function ProfilePanel({ user, onEditProfile }: ProfilePanelProps) {
+  const currentLevel = XP_LEVELS.find(l => l.level === user.level);
+  const nextLevel = XP_LEVELS.find(l => l.level === user.level + 1);
+  const xpProgress = nextLevel ? ((user.xp - (currentLevel?.xpRequired || 0)) / (nextLevel.xpRequired - (currentLevel?.xpRequired || 0))) * 100 : 100;
 
   return (
-    <div className="h-full overflow-y-auto px-4 py-6 space-y-6">
-      {/* Header do Perfil */}
-      <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 backdrop-blur-md border border-purple-500/30 rounded-2xl p-6">
-        <div className="flex items-start gap-4 mb-4">
-          {/* Avatar */}
-          <div className="relative">
-            <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-full flex items-center justify-center text-2xl font-black text-white ring-4 ring-purple-500/30">
-              {profile.avatar}
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-xs font-black text-white border-2 border-black">
-              {profile.level}
-            </div>
+    <div className="bg-gradient-to-br from-gray-900 to-black p-6 rounded-2xl border border-gray-800">
+      {/* Profile Header */}
+      <div className="flex items-start gap-4 mb-6">
+        <div className="relative">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white text-3xl font-bold">
+            {user.avatar || user.name.charAt(0).toUpperCase()}
           </div>
-
-          {/* Info */}
-          <div className="flex-1">
-            <h2 className="text-2xl font-black text-white mb-1">{profile.name}</h2>
-            <p className="text-purple-400 text-sm mb-2">{profile.username}</p>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <span>Membro desde {profile.joinDate}</span>
-              <span>•</span>
-              <span className="text-cyan-400 font-bold">Rank #{profile.rank}</span>
-            </div>
-          </div>
-
-          {/* Botões */}
-          <div className="flex gap-2">
-            <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-              <Edit className="w-4 h-4 text-white" />
-            </button>
-            <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-              <Settings className="w-4 h-4 text-white" />
-            </button>
+          <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full p-2">
+            <Crown className="w-5 h-5 text-white" />
           </div>
         </div>
 
-        {/* Barra de XP */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-cyan-400 font-bold">Nível {profile.level}</span>
-            <span className="text-gray-400">{profile.xp} / {profile.xpToNext} XP</span>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-white text-2xl font-bold">{user.name}</h2>
+            <button
+              onClick={onEditProfile}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
           </div>
-          <div className="h-3 bg-black/40 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full transition-all duration-500"
-              style={{ width: `${(profile.xp / profile.xpToNext) * 100}%` }}
-            ></div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-1 rounded-full text-white text-sm font-semibold">
+              Nível {user.level}
+            </div>
+            <span className="text-gray-400 text-sm">{currentLevel?.title}</span>
+          </div>
+
+          {/* XP Progress */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-gray-400 text-xs">Experiência</span>
+              <span className="text-white text-xs font-semibold">
+                {user.xp} / {nextLevel?.xpRequired || user.xp} XP
+              </span>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300"
+                style={{ width: `${xpProgress}%` }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-black/40 backdrop-blur-md border border-purple-500/30 rounded-xl p-4 hover:border-purple-500/50 transition-all duration-300"
-          >
-            <div className="text-gray-400 text-xs font-bold uppercase mb-1">{stat.label}</div>
-            <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Conquistas */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Trophy className="w-5 h-5 text-yellow-400" />
-          <h3 className="text-white font-black text-lg">Conquistas</h3>
-          <div className="flex-1 h-px bg-gradient-to-r from-yellow-500/50 to-transparent"></div>
-          <span className="text-gray-400 text-sm">{achievements.filter(a => a.unlocked).length}/{achievements.length}</span>
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-gray-800/50 p-3 rounded-xl text-center">
+          <Trophy className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+          <div className="text-white text-lg font-bold">{user.territories.length}</div>
+          <div className="text-gray-400 text-xs">Territórios</div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          {achievements.map((achievement) => {
-            const Icon = achievement.icon
-            return (
-              <div
-                key={achievement.id}
-                className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
-                  achievement.unlocked
-                    ? `bg-gradient-to-br ${achievement.color} hover:scale-105 cursor-pointer`
-                    : "bg-black/40 border border-purple-500/20 opacity-40"
-                }`}
-              >
-                <Icon className={`w-8 h-8 ${achievement.unlocked ? "text-white" : "text-gray-600"}`} />
-                <span className={`text-[10px] font-bold text-center px-2 ${achievement.unlocked ? "text-white" : "text-gray-600"}`}>
-                  {achievement.name}
-                </span>
-              </div>
-            )
-          })}
+        <div className="bg-gray-800/50 p-3 rounded-xl text-center">
+          <Zap className="w-5 h-5 text-orange-400 mx-auto mb-1" />
+          <div className="text-white text-lg font-bold">{user.energy}</div>
+          <div className="text-gray-400 text-xs">Energia</div>
+        </div>
+
+        <div className="bg-gray-800/50 p-3 rounded-xl text-center">
+          <Crown className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+          <div className="text-white text-lg font-bold">{user.stats.battlesWon}</div>
+          <div className="text-gray-400 text-xs">Vitórias</div>
         </div>
       </div>
 
-      {/* Configurações Rápidas */}
-      <div className="space-y-2">
-        <button className="w-full bg-black/40 backdrop-blur-md border border-purple-500/30 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/50 transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <Settings className="w-5 h-5 text-purple-400" />
-            <span className="text-white font-bold">Configurações</span>
-          </div>
-          <div className="text-gray-400">›</div>
-        </button>
-
-        <button className="w-full bg-black/40 backdrop-blur-md border border-purple-500/30 rounded-xl p-4 flex items-center justify-between hover:border-purple-500/50 transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <User className="w-5 h-5 text-cyan-400" />
-            <span className="text-white font-bold">Editar Perfil</span>
-          </div>
-          <div className="text-gray-400">›</div>
-        </button>
-
-        <button className="w-full bg-black/40 backdrop-blur-md border border-red-500/30 rounded-xl p-4 flex items-center justify-between hover:border-red-500/50 transition-all duration-300">
-          <div className="flex items-center gap-3">
-            <LogOut className="w-5 h-5 text-red-400" />
-            <span className="text-white font-bold">Sair</span>
-          </div>
-          <div className="text-gray-400">›</div>
-        </button>
+      {/* Inventory */}
+      <div className="mb-6">
+        <h3 className="text-white font-bold mb-3">Inventário</h3>
+        <div className="grid grid-cols-4 gap-2">
+          {user.inventory.boosts.map((boost, index) => (
+            <div
+              key={index}
+              className="bg-gray-800/50 p-3 rounded-lg text-center border border-gray-700 hover:border-cyan-500 transition-all cursor-pointer"
+            >
+              <Zap className="w-6 h-6 text-cyan-400 mx-auto mb-1" />
+              <div className="text-white text-xs font-semibold">{boost.quantity}x</div>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Settings Button */}
+      <button className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+        <Settings className="w-5 h-5" />
+        Configurações
+      </button>
     </div>
-  )
+  );
 }

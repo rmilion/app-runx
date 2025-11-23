@@ -1,69 +1,48 @@
-"use client"
+'use client';
 
-import { Map, BarChart3, Target, User, Trophy, Play } from "lucide-react"
+import React from 'react';
+import { Map, Trophy, Target, Users, User, Settings } from 'lucide-react';
 
 interface NavigationProps {
-  activeView: "map" | "stats" | "missions" | "profile" | "leaderboard"
-  onViewChange: (view: "map" | "stats" | "missions" | "profile" | "leaderboard") => void
-  isRunning: boolean
-  onStartRun: () => void
+  activeTab: string;
+  onTabChange: (tab: string) => void;
 }
 
-export function Navigation({ activeView, onViewChange, isRunning, onStartRun }: NavigationProps) {
-  const navItems = [
-    { id: "map" as const, icon: Map, label: "Mapa" },
-    { id: "stats" as const, icon: BarChart3, label: "Stats" },
-    { id: "missions" as const, icon: Target, label: "Missões" },
-    { id: "leaderboard" as const, icon: Trophy, label: "Ranking" },
-    { id: "profile" as const, icon: User, label: "Perfil" },
-  ]
+export default function Navigation({ activeTab, onTabChange }: NavigationProps) {
+  const tabs = [
+    { id: 'map', label: 'Mapa', icon: Map },
+    { id: 'missions', label: 'Missões', icon: Target },
+    { id: 'leaderboard', label: 'Ranking', icon: Trophy },
+    { id: 'stats', label: 'Stats', icon: Users },
+    { id: 'profile', label: 'Perfil', icon: User },
+  ];
 
   return (
-    <nav className="absolute bottom-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-t border-purple-500/20">
-      <div className="relative flex items-center justify-around px-2 py-2">
-        {navItems.map((item, index) => {
-          const Icon = item.icon
-          const isActive = activeView === item.id
-          
+    <nav className="bg-gray-900 border-t border-gray-800">
+      <div className="flex items-center justify-around">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
           return (
             <button
-              key={item.id}
-              onClick={() => onViewChange(item.id)}
-              className={`relative flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 ${
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`flex-1 flex flex-col items-center gap-1 py-3 transition-all ${
                 isActive
-                  ? "bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/50"
-                  : "hover:bg-white/5"
+                  ? 'text-cyan-400'
+                  : 'text-gray-400 hover:text-gray-300'
               }`}
             >
-              <Icon
-                className={`w-5 h-5 transition-colors ${
-                  isActive ? "text-cyan-400" : "text-gray-400"
-                }`}
-              />
-              <span
-                className={`text-[10px] font-bold uppercase tracking-wider ${
-                  isActive ? "text-cyan-400" : "text-gray-400"
-                }`}
-              >
-                {item.label}
-              </span>
+              <Icon className={`w-6 h-6 ${isActive ? 'scale-110' : ''}`} />
+              <span className="text-xs font-semibold">{tab.label}</span>
               {isActive && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-400"></div>
+                <div className="w-8 h-1 bg-cyan-400 rounded-full mt-1" />
               )}
             </button>
-          )
+          );
         })}
       </div>
-
-      {/* Botão de iniciar corrida (flutuante) */}
-      {!isRunning && (
-        <button
-          onClick={onStartRun}
-          className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-2xl shadow-purple-500/50 hover:scale-110 transition-transform duration-300 border-4 border-black"
-        >
-          <Play className="w-7 h-7 text-white fill-white ml-1" />
-        </button>
-      )}
     </nav>
-  )
+  );
 }

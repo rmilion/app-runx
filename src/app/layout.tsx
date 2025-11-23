@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Criado com a Lasy",
-  description: "Projeto criado com Lasy AI",
+  title: "RUNX - Conquiste o Mundo Correndo",
+  description: "Aplicativo de corrida gamificada com conquista de territórios",
 };
 
 export default function RootLayout({
